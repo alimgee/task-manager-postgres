@@ -1,6 +1,7 @@
-from flask import render_template, request, redirect, url_for
+from flask import render_template, request, redirect, url_for, session, flash
 from taskmanager import app, db
-from taskmanager.models import Category, Task
+from taskmanager.models import Category, Task, Account
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 @app.route("/")
@@ -80,3 +81,36 @@ def delete_task(task_id):
     db.session.delete(task)
     db.session.commit()
     return redirect(url_for("home"))
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        # check if username already exists in db
+        username = request.form.get("username")
+        print("username fro form is : ", username)
+        existing_user = Account.query.filter_by(user_name=username).first()
+       
+        print("existing user is: ", existing_user)
+
+        if existing_user:
+            print("in flash")
+            flash("Username already exists")
+            return redirect(url_for("register"))
+
+        user = Account(
+            user_name = request.form.get("username"),
+            password = generate_password_hash(request.form.get("password"))
+
+        )
+        print(user.password)
+        db.session.add(user)
+        db.session.commit()
+
+        # put the new user into 'session' cookie
+        session["user"] = request.form.get("username").lower()
+        flash("Registration Successful!")
+        return redirect(url_for("home"))
+
+    return render_template("register.html")
+
