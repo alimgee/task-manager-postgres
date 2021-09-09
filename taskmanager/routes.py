@@ -91,10 +91,8 @@ def register():
         print("username fro form is : ", username)
         existing_user = Account.query.filter_by(user_name=username).first()
        
-        print("existing user is: ", existing_user)
 
         if existing_user:
-            print("in flash")
             flash("Username already exists")
             return redirect(url_for("register"))
 
@@ -114,3 +112,30 @@ def register():
 
     return render_template("register.html")
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        # check if username exists in db
+        username = request.form.get("username")
+        print("username fro form is : ", username)
+        existing_user = Account.query.filter_by(user_name=username).first()
+        print(existing_user.password)
+        if existing_user:
+            if check_password_hash(
+                    existing_user.password, request.form.get("password")):
+                        session["user"] = request.form.get("username").lower()
+                        flash("Welcome, {}".format(
+                            request.form.get("username")))
+                        return redirect(url_for(
+                            "home"))
+            else:
+                # invalid password match
+                flash("Incorrect Username and/or Password")
+                return redirect(url_for("login"))
+
+        else:
+            # username doesn't exist
+            flash("Incorrect Username and/or Password")
+            return redirect(url_for("login"))
+
+    return render_template("login.html")
