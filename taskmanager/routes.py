@@ -5,7 +5,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 @app.route("/")
-def home():
+@app.route("/get_tasks")
+def get_tasks():
     tasks = list(Task.query.order_by(Task.id).all())
     return render_template("tasks.html", tasks=tasks)
 
@@ -88,7 +89,6 @@ def register():
     if request.method == "POST":
         # check if username already exists in db
         username = request.form.get("username")
-        print("username fro form is : ", username)
         existing_user = Account.query.filter_by(user_name=username).first()
        
 
@@ -101,14 +101,13 @@ def register():
             password = generate_password_hash(request.form.get("password"))
 
         )
-        print(user.password)
         db.session.add(user)
         db.session.commit()
 
         # put the new user into 'session' cookie
         session["user"] = request.form.get("username").lower()
         flash("Registration Successful!")
-        return redirect(url_for("home"))
+        return redirect(url_for("login"))
 
     return render_template("register.html")
 
@@ -117,9 +116,9 @@ def login():
     if request.method == "POST":
         # check if username exists in db
         username = request.form.get("username")
-        print("username fro form is : ", username)
+
         existing_user = Account.query.filter_by(user_name=username).first()
-        print(existing_user.password)
+
         if existing_user:
             if check_password_hash(
                     existing_user.password, request.form.get("password")):
@@ -127,7 +126,7 @@ def login():
                         flash("Welcome, {}".format(
                             request.form.get("username")))
                         return redirect(url_for(
-                            "home"))
+                            "login"))
             else:
                 # invalid password match
                 flash("Incorrect Username and/or Password")
@@ -139,3 +138,10 @@ def login():
             return redirect(url_for("login"))
 
     return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    # remove user from session cookie
+    flash("You have been logged out")
+    session.pop("user")
+    return redirect(url_for("login"))
