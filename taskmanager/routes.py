@@ -47,6 +47,17 @@ def delete_category(category_id):
 
 @app.route("/add_task", methods=["GET", "POST"])
 def add_task():
+
+    if 'user' not in session:
+        # if a user trys to go to add review without been logged in
+        flash('You need to log in to add a review')
+        return redirect(url_for('login'))  # sending to log in
+
+    # getting user in session
+    user = session['user']
+    # getting user based on username in session from db
+    account = Account.query.filter_by(user_name=user).first()
+    #       
     categories = list(Category.query.order_by(Category.category_name).all())
     if request.method == "POST":
         task = Task(
@@ -54,11 +65,13 @@ def add_task():
             task_description=request.form.get("task_description"),
             is_urgent=bool(True if request.form.get("is_urgent") else False),
             due_date=request.form.get("due_date"),
-            category_id=request.form.get("category_id")
+            category_id=request.form.get("category_id"),
+            account_id = account.id
+            
         )
         db.session.add(task)
         db.session.commit()
-        return redirect(url_for("home"))
+        return redirect(url_for("login"))
     return render_template("add_task.html", categories=categories)
 
 
